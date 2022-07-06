@@ -1,0 +1,66 @@
+- hosts: web-server
+  remote_user: ubuntu
+  become: true
+
+  tasks:
+    - name: Update all packages
+      apt:
+        update_cache: yes
+        name: "*"
+        state: latest
+
+    - name: Install dependencies
+      apt:
+        pkg:
+          - ca-certificates 
+          - curl
+          - gnupg
+          - lsb-release
+          - htop
+
+    - name: Install apt key
+      ansible.builtin.apt_key:
+        url: "https://download.docker.com/linux/ubuntu/gpg"
+        state: present
+        keyring: /etc/apt/trusted.gpg.d/docker.gpg
+
+    - name: Install docker repo
+      apt_repository: 
+        repo: "deb [arch=amd64 signed-by=/etc/apt/trusted.gpg.d/docker.gpg] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+        filename: docker
+
+    - name: Install Docker & Git
+      apt:
+        update_cache: yes
+        pkg:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-compose-plugin
+          - git
+
+    - name: Install docker-compose from official github repo
+      get_url:
+        url : https://github.com/docker/compose/releases/download/v2.6.1/docker-compose-linux-x86_64
+        dest: /usr/local/bin/docker-compose
+        mode: 'u+x,g+x'
+
+    - name: Git checkout API repository
+      ansible.builtin.git:
+        repo: 'https://github.com/app-knight/flask-api-workshop'
+        dest: /home/app
+
+    - name: Pass env file to project
+      copy:
+        src: ~/Documents/Projects/flask-api-workshop/.env
+        dest: /home/app/.env
+        owner: ubuntu
+        group: ubuntu
+        mode: 0644
+    
+    - name: Run Docker Container
+      become: True
+      shell:
+        cmd: "docker-compose -f docker-compose.yml up -d"
+        chdir: /home/app/
