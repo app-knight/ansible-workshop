@@ -52,12 +52,12 @@
         dest: /home/app
 
     - name: Pass env file to project
-      copy:
-        src: ~/Documents/Projects/flask-api-workshop/.env
+      ansible.builtin.template:
+        src: ./templates/env_file.j2
         dest: /home/app/.env
         owner: ubuntu
         group: ubuntu
-        mode: 0644
+        mode: '0644'
     
     - name: Run Docker Container
       become: True
